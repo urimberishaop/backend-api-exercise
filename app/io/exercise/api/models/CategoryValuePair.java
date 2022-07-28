@@ -5,10 +5,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
-@AllArgsConstructor
 @NoArgsConstructor
-public class AuthenticationUser {
-    private String id;
-    private String username;
-    private String password;
+@AllArgsConstructor
+public class CategoryValuePair {
+    String category;
+    int value;
 }

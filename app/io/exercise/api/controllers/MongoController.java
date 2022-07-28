@@ -5,7 +5,7 @@ import com.mongodb.MongoClientSettings;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
-import io.exercise.api.models.User;
+import io.exercise.api.models.Dashboard;
 import io.exercise.api.mongo.IMongoDB;
 import org.bson.Document;
 import org.bson.codecs.configuration.CodecRegistry;
@@ -35,9 +35,9 @@ public class MongoController extends Controller {
 
     public Result create(Http.Request request) {
         try {
-            User user = Json.fromJson(request.body().asJson(), User.class);
+            Dashboard user = Json.fromJson(request.body().asJson(), Dashboard.class);
             mongoDB.getMongoDatabase()
-                    .getCollection("users", User.class)
+                    .getCollection("users", Dashboard.class)
                     .insertOne(user);
             return ok(Json.toJson(user));
         } catch (Exception e) {
@@ -57,9 +57,9 @@ public class MongoController extends Controller {
 
     public Result update(Http.Request request, String id) {
 
-        User user = Json.fromJson(request.body().asJson(), User.class);
-        User isFound = mongoDB.getMongoDatabase()
-                .getCollection("users", User.class)
+        Dashboard user = Json.fromJson(request.body().asJson(), Dashboard.class);
+        Dashboard isFound = mongoDB.getMongoDatabase()
+                .getCollection("users", Dashboard.class)
                 .findOneAndReplace(eq("_id", id), user);
 
         if (isFound == null) {
@@ -71,8 +71,8 @@ public class MongoController extends Controller {
 
 
     public Result delete(String id) {
-        User user =  mongoDB.getMongoDatabase()
-                .getCollection("users", User.class)
+        Dashboard user =  mongoDB.getMongoDatabase()
+                .getCollection("users", Dashboard.class)
                 .findOneAndDelete(eq("_id", id));
 
         if (user == null) {

@@ -3,12 +3,15 @@
 # ~~~~
 
 # An example controller showing a sample home page
-GET     /                        io.exercise.api.controllers.HomeController.index()
+GET     /                                    io.exercise.api.controllers.HomeController.index()
 
 # Map static resources from the /public folder to the /assets URL path
-GET     /assets/*file            controllers.Assets.versioned(path="/public", file: Asset)
-POST    /api/authenticate        @io.exercise.api.controllers.HomeController.authenticate(request: Request)
-POST    /api/dashboard           @io.exercise.api.controllers.MongoController.create(request: Request)
-GET     /api/dashboard           @io.exercise.api.controllers.MongoController.all()
-PUT     /api/dashboard           @io.exercise.api.controllers.MongoController.update(request: Request, id: String)
-DELETE  /api/dashboard           @io.exercise.api.controllers.MongoController.delete(id: String)
+GET     /assets/*file                        controllers.Assets.versioned(path="/public", file: Asset)
+POST    /api/authenticate                    @io.exercise.api.controllers.HomeController.authenticate(request: Request)
+POST    /api/dashboard                       @io.exercise.api.controllers.MongoController.create(request: Request)
+GET     /api/dashboard                       @io.exercise.api.controllers.MongoController.all()
+PUT     /api/dashboard                       @io.exercise.api.controllers.MongoController.update(request: Request, id: String)
+DELETE  /api/dashboard/:id                   @io.exercise.api.controllers.MongoController.delete(id: String)
+GET     /api/dashboard/:id/content           @io.exercise.api.controllers.MongoContentController.all(id: String)
+POST    /api/dashboard/content               @io.exercise.api.controllers.MongoContentController.create(request: Request)
+PUT     /api/dashboard/:id/content           @io.exercise.api.controllers.MongoContentController.update(request: Request, id: String)

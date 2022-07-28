@@ -5,21 +5,21 @@ import lombok.*;
 
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 @Data
 @Builder
-@EqualsAndHashCode(of = "id")
+@EqualsAndHashCode(callSuper = true)
 @AllArgsConstructor
 @NoArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class User {
-    private String id = UUID.randomUUID().toString();
+public class Dashboard extends BaseModel{
     private String name;
     private String description;
     private String parentId;
-    private Timestamp createdAt = Timestamp.from(Instant.now());
-    private List<String> readACL;
-    private List<String> writeACL;
+    private List<String> readACL = new ArrayList<>();
+    private List<String> writeACL = new ArrayList<>();
+    private List<Content> content = new ArrayList<>();
 }

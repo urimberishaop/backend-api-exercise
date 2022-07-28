@@ -6,7 +6,7 @@ import com.mongodb.MongoClientSettings;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoDatabase;
 import com.typesafe.config.Config;
-import io.exercise.api.models.User;
+import io.exercise.api.models.*;
 import org.bson.codecs.configuration.CodecProvider;
 import org.bson.codecs.configuration.CodecRegistries;
 import org.bson.codecs.configuration.CodecRegistry;
@@ -50,13 +50,18 @@ public abstract class MongoDriver implements IMongoDB {
 //		ClassModel<SubscriberUser> subscriberUserModel = ClassModel.builder(SubscriberUser.class).enableDiscriminator(true).build();
 //		ClassModel<PremiumUser> premiumUserModel = ClassModel.builder(PremiumUser.class).enableDiscriminator(true).build();
 
-		ClassModel<User> user = ClassModel.builder(User.class).enableDiscriminator(true).build();
+		ClassModel<Content> contentModel = ClassModel.builder(Content.class).enableDiscriminator(true).build();
+		ClassModel<ImageContent> imageContentModel = ClassModel.builder(ImageContent.class).enableDiscriminator(true).build();
+		ClassModel<TextContent> textContentModel = ClassModel.builder(TextContent.class).enableDiscriminator(true).build();
+		ClassModel<EmailContent> emailContentModel = ClassModel.builder(EmailContent.class).enableDiscriminator(true).build();
+
+		ClassModel<Dashboard> dashboard = ClassModel.builder(Dashboard.class).enableDiscriminator(true).build();
 
 		CodecProvider pojoCodecProvider =
 				PojoCodecProvider.builder()
 						.conventions(Collections.singletonList(ANNOTATION_CONVENTION))
 						.register("io.exercise.api.models")
-						.register(user)
+						.register(dashboard, contentModel, imageContentModel, textContentModel, emailContentModel)
 						.automatic(true)
 						.build();
 
