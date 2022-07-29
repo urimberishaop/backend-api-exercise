@@ -4,6 +4,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.bson.codecs.pojo.annotations.BsonDiscriminator;
 
+import javax.validation.constraints.NotEmpty;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -11,7 +12,7 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = true)
 @BsonDiscriminator(key = "type", value = "Line")
 public class LineContent extends Content{
-    String url;
+    @NotEmpty
     List<CategoryValuePair> data = new ArrayList<>();
 
     @Override

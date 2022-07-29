@@ -16,11 +16,13 @@ import org.bson.types.ObjectId;
 @JsonSubTypes({
         @JsonSubTypes.Type(value = ImageContent.class, name = "IMAGE"),
         @JsonSubTypes.Type(value = TextContent.class, name = "TEXT"),
-        @JsonSubTypes.Type(value = EmailContent.class, name = "EMAIL")
+        @JsonSubTypes.Type(value = EmailContent.class, name = "EMAIL"),
+        @JsonSubTypes.Type(value = LineContent.class, name = "Line")
 })
 @BsonDiscriminator(key = "type", value = "NONE")
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class Content extends BaseModel {
+    ObjectId id; //= new ObjectId();
     ObjectId dashboardId;
     Types type = Types.NONE;
 }
