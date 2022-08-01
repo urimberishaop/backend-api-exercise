@@ -1,31 +1,25 @@
 package io.exercise.api.controllers;
 
-import com.mongodb.client.MongoCollection;
-import com.mongodb.client.model.Filters;
-import io.exercise.api.models.*;
-import io.exercise.api.mongo.IMongoDB;
+import io.exercise.api.actions.Authentication;
+import io.exercise.api.actions.Validation;
+import io.exercise.api.models.Content;
 import io.exercise.api.services.ContentCrudService;
-import io.exercise.api.services.DashboardCrudService;
 import io.exercise.api.services.SerializationService;
 import io.exercise.api.utils.DatabaseUtils;
-import org.bson.types.ObjectId;
-import play.libs.Json;
+import io.exercise.api.utils.ServiceUtils;
 import play.mvc.Controller;
 import play.mvc.Http;
 import play.mvc.Result;
 import play.mvc.Results;
 
 import javax.inject.Inject;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
-
-import static com.mongodb.client.model.Filters.eq;
 
 /**
  * This controller contains an action to handle HTTP requests
  * to the application's home page.
  */
+@Authentication
 public class ContentCrudController extends Controller {
 
     @Inject
@@ -34,9 +28,10 @@ public class ContentCrudController extends Controller {
     @Inject
     ContentCrudService service;
 
+    @Validation
     public CompletableFuture<Result> create(Http.Request request) {
         return serializationService.parseListBodyOfType(request, Content.class)
-                .thenCompose((data) -> service.create(data))
+                .thenCompose((data) -> service.create(data, ServiceUtils.getUserFrom(request)))
                 .thenCompose((data) -> serializationService.toJsonNode(data))
                 .thenApply(Results::ok)
                 .exceptionally(DatabaseUtils::throwableToResult);
@@ -49,6 +44,7 @@ public class ContentCrudController extends Controller {
                 .exceptionally(DatabaseUtils::throwableToResult);
     }
 
+    @Validation
     public CompletableFuture<Result> update(Http.Request request, String id) {
         return serializationService.parseBodyOfType(request, Content.class)
                 .thenCompose((data) -> service.update(data, id))

@@ -10,6 +10,10 @@ import lombok.NoArgsConstructor;
 import org.bson.codecs.pojo.annotations.BsonDiscriminator;
 import org.bson.types.ObjectId;
 
+import javax.validation.constraints.NotEmpty;
+import java.util.ArrayList;
+import java.util.List;
+
 @Data
 @EqualsAndHashCode(callSuper = true)
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type", visible = true)
@@ -22,7 +26,11 @@ import org.bson.types.ObjectId;
 @BsonDiscriminator(key = "type", value = "NONE")
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class Content extends BaseModel {
-    ObjectId id; //= new ObjectId();
+    ObjectId id;
+    @NotEmpty(message = "cannot be empty!")
     ObjectId dashboardId;
+    @NotEmpty(message = "cannot be empty!")
     Types type = Types.NONE;
+    List<String> readACL = new ArrayList<>();
+    List<String> writeACL = new ArrayList<>();
 }

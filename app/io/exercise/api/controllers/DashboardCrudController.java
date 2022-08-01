@@ -1,5 +1,7 @@
 package io.exercise.api.controllers;
 
+import io.exercise.api.actions.Authentication;
+import io.exercise.api.actions.Validation;
 import io.exercise.api.models.Dashboard;
 import io.exercise.api.services.DashboardCrudService;
 import io.exercise.api.services.SerializationService;
@@ -11,7 +13,7 @@ import play.mvc.Results;
 
 import javax.inject.Inject;
 import java.util.concurrent.CompletableFuture;
-
+@Authentication
 public class DashboardCrudController extends Controller {
 
     @Inject
@@ -20,6 +22,7 @@ public class DashboardCrudController extends Controller {
     @Inject
     DashboardCrudService service;
 
+    @Validation
     public CompletableFuture<Result> create(Http.Request request) {
         return serializationService.parseBodyOfType(request, Dashboard.class)
                 .thenCompose((data) -> service.create(data))
@@ -28,13 +31,14 @@ public class DashboardCrudController extends Controller {
                 .exceptionally(DatabaseUtils::throwableToResult);
     }
 
-    public CompletableFuture<Result> all() {
+    public CompletableFuture<Result> all(Http.Request request) {
         return service.all()
                 .thenCompose((data) -> serializationService.toJsonNode(data))
                 .thenApply(Results::ok)
                 .exceptionally(DatabaseUtils::throwableToResult);
     }
 
+    @Validation
     public CompletableFuture<Result> update(Http.Request request, String id) {
         return serializationService.parseBodyOfType(request, Dashboard.class)
                 .thenCompose((data) -> service.update(data, id))
@@ -43,7 +47,7 @@ public class DashboardCrudController extends Controller {
                 .exceptionally(DatabaseUtils::throwableToResult);
     }
 
-    public CompletableFuture<Result> delete(String id) {
+    public CompletableFuture<Result> delete(Http.Request request, String id) {
         return service.delete(id)
                 .thenCompose((data) -> serializationService.toJsonNode(data))
                 .thenApply(Results::ok)

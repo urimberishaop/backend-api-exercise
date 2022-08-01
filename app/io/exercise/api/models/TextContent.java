@@ -4,18 +4,19 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.bson.codecs.pojo.annotations.BsonDiscriminator;
 
-import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.Size;
+import java.util.ArrayList;
 import java.util.List;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
 @BsonDiscriminator(key = "type", value = "TEXT")
-public class TextContent extends Content{
-    @NotEmpty
+public class TextContent extends Content {
+    @Size(min = 10, max = 200, message = "must be between 10 and 200 characters")
     String text;
-    List<String> readACL;
-    List<String> writeACL;
 
     @Override
-    public Types getType() { return Types.TEXT; }
+    public Types getType() {
+        return Types.TEXT;
+    }
 }

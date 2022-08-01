@@ -55,6 +55,7 @@ public class DashboardCrudService {
                 if (!ObjectId.isValid(id)) {
                     throw new CompletionException(new RequestException(Http.Status.NOT_FOUND, "Dashboard not found. Please re-check your input."));
                 }
+                dashboard.setId(null);
                 mongoDB.getMongoDatabase()
                         .getCollection(collectionName, Dashboard.class)
                         .findOneAndReplace(eq("_id", new ObjectId(id)), dashboard);

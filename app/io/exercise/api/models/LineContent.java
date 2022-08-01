@@ -11,10 +11,12 @@ import java.util.List;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @BsonDiscriminator(key = "type", value = "Line")
-public class LineContent extends Content{
-    @NotEmpty
+public class LineContent extends Content {
+    @NotEmpty(message = "cannot be empty!")
     List<CategoryValuePair> data = new ArrayList<>();
 
     @Override
-    public Types getType() { return Types.Line; }
+    public Types getType() {
+        return Types.Line;
+    }
 }
