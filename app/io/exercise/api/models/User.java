@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.bson.types.ObjectId;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,5 +16,5 @@ import java.util.List;
 public class User extends BaseModel{
     private String username;
     private String password;
-    private List<Role> roles = new ArrayList<>();
+    private List<String> roles = new ArrayList<>();
 }

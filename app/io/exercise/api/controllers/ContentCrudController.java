@@ -37,8 +37,8 @@ public class ContentCrudController extends Controller {
                 .exceptionally(DatabaseUtils::throwableToResult);
     }
 
-    public CompletableFuture<Result> all(String id) {
-        return service.all(id)
+    public CompletableFuture<Result> all(Http.Request request, String id) {
+        return service.all(ServiceUtils.getUserFrom(request))
                 .thenCompose((data) -> serializationService.toJsonNode(data))
                 .thenApply(Results::ok)
                 .exceptionally(DatabaseUtils::throwableToResult);
@@ -47,14 +47,14 @@ public class ContentCrudController extends Controller {
     @Validation
     public CompletableFuture<Result> update(Http.Request request, String id) {
         return serializationService.parseBodyOfType(request, Content.class)
-                .thenCompose((data) -> service.update(data, id))
+                .thenCompose((data) -> service.update(data, id, ServiceUtils.getUserFrom(request)))
                 .thenCompose((data) -> serializationService.toJsonNode(data))
                 .thenApply(Results::ok)
                 .exceptionally(DatabaseUtils::throwableToResult);
     }
 
-    public CompletableFuture<Result> delete(String id) {
-        return service.delete(id)
+    public CompletableFuture<Result> delete(Http.Request request, String id) {
+        return service.delete(id, ServiceUtils.getUserFrom(request))
                 .thenCompose((data) -> serializationService.toJsonNode(data))
                 .thenApply(Results::ok)
                 .exceptionally(DatabaseUtils::throwableToResult);

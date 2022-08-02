@@ -20,4 +20,6 @@ public class Dashboard extends BaseModel {
     private ObjectId parentId;
     private List<String> readACL = new ArrayList<>();
     private List<String> writeACL = new ArrayList<>();
+    private List<Content> items = new ArrayList<>();
+    private List<Dashboard> children = new ArrayList<>();
 }

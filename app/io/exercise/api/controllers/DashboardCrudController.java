@@ -6,6 +6,7 @@ import io.exercise.api.models.Dashboard;
 import io.exercise.api.services.DashboardCrudService;
 import io.exercise.api.services.SerializationService;
 import io.exercise.api.utils.DatabaseUtils;
+import io.exercise.api.utils.ServiceUtils;
 import play.mvc.Controller;
 import play.mvc.Http;
 import play.mvc.Result;
@@ -32,7 +33,7 @@ public class DashboardCrudController extends Controller {
     }
 
     public CompletableFuture<Result> all(Http.Request request) {
-        return service.all()
+        return service.all(ServiceUtils.getUserFrom(request))
                 .thenCompose((data) -> serializationService.toJsonNode(data))
                 .thenApply(Results::ok)
                 .exceptionally(DatabaseUtils::throwableToResult);
@@ -41,14 +42,21 @@ public class DashboardCrudController extends Controller {
     @Validation
     public CompletableFuture<Result> update(Http.Request request, String id) {
         return serializationService.parseBodyOfType(request, Dashboard.class)
-                .thenCompose((data) -> service.update(data, id))
+                .thenCompose((data) -> service.update(data, id, ServiceUtils.getUserFrom(request)))
                 .thenCompose((data) -> serializationService.toJsonNode(data))
                 .thenApply(Results::ok)
                 .exceptionally(DatabaseUtils::throwableToResult);
     }
 
     public CompletableFuture<Result> delete(Http.Request request, String id) {
-        return service.delete(id)
+        return service.delete(id, ServiceUtils.getUserFrom(request))
+                .thenCompose((data) -> serializationService.toJsonNode(data))
+                .thenApply(Results::ok)
+                .exceptionally(DatabaseUtils::throwableToResult);
+    }
+
+    public CompletableFuture<Result> hierarchy(Http.Request request) {
+        return service.hierarchy()
                 .thenCompose((data) -> serializationService.toJsonNode(data))
                 .thenApply(Results::ok)
                 .exceptionally(DatabaseUtils::throwableToResult);
