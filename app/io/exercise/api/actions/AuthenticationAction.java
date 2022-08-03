@@ -11,6 +11,7 @@ import com.mongodb.client.model.Filters;
 import com.typesafe.config.ConfigFactory;
 import io.exercise.api.models.User;
 import io.exercise.api.mongo.IMongoDB;
+import io.exercise.api.utils.ServiceUtils;
 import org.bson.types.ObjectId;
 import play.libs.Json;
 import play.mvc.Action;
@@ -29,6 +30,8 @@ public class AuthenticationAction extends Action<Authentication> {
     @Inject
     IMongoDB mongoDB;
 
+    private static final String USERS_COLLECTION_NAME = "users";
+
     @Override
     public CompletionStage<Result> call(Http.Request request) {
         try {
@@ -38,8 +41,9 @@ public class AuthenticationAction extends Action<Authentication> {
                 return CompletableFuture.completedFuture(notFound("Token header not found."));
             }
 
-            String token = request.header("token").get();
-            token = token.replace("bearer ", "");
+            // Editing out the "bearer" part from "bearer {TOKEN}"
+            String token = ServiceUtils.getTokenFromRequest(request)
+                    .replace("bearer ", "");
             JWTVerifier verifier = JWT.require(algorithm)
                     .build();
             DecodedJWT jwt = verifier.verify(token);
@@ -48,7 +52,7 @@ public class AuthenticationAction extends Action<Authentication> {
             JsonNode tokenJson = Json.parse(tokenDecoded);
 
             List<User> find = mongoDB.getMongoDatabase()
-                    .getCollection("authentication", User.class)
+                    .getCollection(USERS_COLLECTION_NAME, User.class)
                     .find()
                     .filter(Filters.eq("_id", new ObjectId(tokenJson.get("id").asText())))
                     .into(new ArrayList<>());

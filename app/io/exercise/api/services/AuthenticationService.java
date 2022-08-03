@@ -21,7 +21,7 @@ public class AuthenticationService {
     @Inject
     IMongoDB mongoDB;
 
-    final String collectionName = "authentication";
+    private static final String USERS_COLLECTION_NAME = "users";
 
     public CompletableFuture<String> authenticate(User user) {
         return CompletableFuture.supplyAsync(() -> {
@@ -29,7 +29,7 @@ public class AuthenticationService {
                 Algorithm algorithm = Algorithm.HMAC256(ConfigFactory.load(this.getClass().getClassLoader()).getString("play.http.secret.key"));
 
                 User userFound = mongoDB.getMongoDatabase()
-                        .getCollection(collectionName, User.class)
+                        .getCollection(USERS_COLLECTION_NAME, User.class)
                         .find()
                         .filter(Filters.eq("username", user.getUsername()))
                         .into(new ArrayList<>())

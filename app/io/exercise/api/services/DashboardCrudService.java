@@ -1,13 +1,16 @@
 package io.exercise.api.services;
 
 import com.google.inject.Inject;
+import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.Projections;
 import io.exercise.api.exceptions.RequestException;
 import io.exercise.api.models.BaseModel;
 import io.exercise.api.models.Content;
 import io.exercise.api.models.Dashboard;
 import io.exercise.api.models.User;
 import io.exercise.api.mongo.IMongoDB;
+import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 import play.mvc.Http;
@@ -71,7 +74,7 @@ public class DashboardCrudService {
                                 .filter(content -> content.getDashboardId().equals(dashboard.getId()))
                                 .collect(Collectors.toList()));
 
-                    skip.addAndGet(limit);
+                        skip.addAndGet(limit);
                     });
                 }
                 return dashboards;
@@ -134,18 +137,30 @@ public class DashboardCrudService {
     public CompletableFuture<List<Dashboard>> hierarchy() {
         return CompletableFuture.supplyAsync(() -> {
             try {
-                List<Dashboard> dashboards = mongoDB.getMongoDatabase()
-                        .getCollection(DASHBOARDS_COLLECTION_NAME, Dashboard.class)
-                        .find()
+//                List<Dashboard> dashboards = mongoDB.getMongoDatabase()
+//                        .getCollection(DASHBOARDS_COLLECTION_NAME, Dashboard.class)
+//                        .find()
+//                        .into(new ArrayList<>());
+//
+//                List<Dashboard> parentlessCompanies = dashboards.stream()
+//                        .filter(x -> x.getParentId() == null)
+//                        .collect(Collectors.toList());
+//
+//                return parentlessCompanies.stream()
+//                        .peek(x -> addChildren(x, dashboards))
+//                        .collect(Collectors.toList());
+
+                List<Bson> pipeline = new ArrayList<>();
+                pipeline.add(Aggregates.match(Filters.eq("parentId", null)));
+                pipeline.add(Aggregates.graphLookup("dashboards", "$parentId", "parentId", "_id", "children"));
+                pipeline.add(Aggregates.skip(0));
+                pipeline.add(Aggregates.limit(100));
+
+
+                return mongoDB.getMongoDatabase()
+                        .getCollection(DASHBOARDS_COLLECTION_NAME)
+                        .aggregate(pipeline, Dashboard.class)
                         .into(new ArrayList<>());
-
-                List<Dashboard> parentlessCompanies = dashboards.stream()
-                        .filter(x -> x.getParentId() == null)
-                        .collect(Collectors.toList());
-
-                return parentlessCompanies.stream()
-                        .peek(x -> addChildren(x, dashboards))
-                        .collect(Collectors.toList());
             } catch (Exception e) {
                 throw new CompletionException(new RequestException(Http.Status.INTERNAL_SERVER_ERROR, e));
             }
@@ -153,12 +168,12 @@ public class DashboardCrudService {
     }
 
 
-    public void addChildren(Dashboard parent, List<Dashboard> list) {
-        for (Dashboard x: list) {
-            if (parent.getId().equals(x.getParentId())) {
-                parent.getChildren().add(x);
-                addChildren(x, list);
-            }
-        }
-    }
+//    public void addChildren(Dashboard parent, List<Dashboard> list) {
+//        for (Dashboard x : list) {
+//            if (parent.getId().equals(x.getParentId())) {
+//                parent.getChildren().add(x);
+//                addChildren(x, list);
+//            }
+//        }
+//    }
 }

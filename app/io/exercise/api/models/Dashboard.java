@@ -1,7 +1,12 @@
 package io.exercise.api.models;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import org.bson.codecs.pojo.annotations.BsonIgnore;
+import org.bson.codecs.pojo.annotations.BsonProperty;
 import org.bson.types.ObjectId;
 
 import javax.validation.constraints.NotEmpty;
@@ -20,6 +25,9 @@ public class Dashboard extends BaseModel {
     private ObjectId parentId;
     private List<String> readACL = new ArrayList<>();
     private List<String> writeACL = new ArrayList<>();
+    @BsonIgnore
     private List<Content> items = new ArrayList<>();
+    @BsonIgnore
+    @BsonProperty("children")
     private List<Dashboard> children = new ArrayList<>();
 }

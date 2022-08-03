@@ -45,17 +45,11 @@ public abstract class MongoDriver implements IMongoDB {
 			database = this.connect();
 		}
 
-//		ClassModel<RegisteredUser> registeredUserModel = ClassModel.builder(RegisteredUser.class).enableDiscriminator(true).build();
-//		ClassModel<FreeUser> freeUserModel = ClassModel.builder(FreeUser.class).enableDiscriminator(true).build();
-//		ClassModel<SubscriberUser> subscriberUserModel = ClassModel.builder(SubscriberUser.class).enableDiscriminator(true).build();
-//		ClassModel<PremiumUser> premiumUserModel = ClassModel.builder(PremiumUser.class).enableDiscriminator(true).build();
-
 		ClassModel<Content> contentModel = ClassModel.builder(Content.class).enableDiscriminator(true).build();
 		ClassModel<ImageContent> imageContentModel = ClassModel.builder(ImageContent.class).enableDiscriminator(true).build();
 		ClassModel<TextContent> textContentModel = ClassModel.builder(TextContent.class).enableDiscriminator(true).build();
 		ClassModel<EmailContent> emailContentModel = ClassModel.builder(EmailContent.class).enableDiscriminator(true).build();
-
-		ClassModel<Dashboard> dashboard = ClassModel.builder(Dashboard.class).enableDiscriminator(true).build();
+		ClassModel<Dashboard> dashboard = ClassModel.builder(Dashboard.class).enableDiscriminator(false).build();
 
 		CodecProvider pojoCodecProvider =
 				PojoCodecProvider.builder()
