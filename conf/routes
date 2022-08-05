@@ -28,3 +28,6 @@ POST    /api/user                            @io.exercise.api.controllers.UserCr
 GET     /api/user                            @io.exercise.api.controllers.UserCrudController.all(request: Request)
 PUT     /api/user/:id                        @io.exercise.api.controllers.UserCrudController.update(request: Request, id: String)
 DELETE  /api/user/:id                        @io.exercise.api.controllers.UserCrudController.delete(request: Request, id: String)
+
+
+GET     /api/chat/:roomId                    @io.exercise.api.controllers.ChatController.chat(roomId: String)
