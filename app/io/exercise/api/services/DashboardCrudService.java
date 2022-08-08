@@ -1,7 +1,6 @@
 package io.exercise.api.services;
 
 import com.google.inject.Inject;
-import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import io.exercise.api.exceptions.RequestException;
 import io.exercise.api.models.BaseModel;
@@ -26,7 +25,6 @@ import java.util.stream.Collectors;
 
 import static com.mongodb.client.model.Filters.eq;
 import static com.mongodb.client.model.Filters.in;
-import static java.util.stream.Collectors.groupingBy;
 
 @Singleton
 public class DashboardCrudService {
@@ -35,6 +33,7 @@ public class DashboardCrudService {
 
     private static final String CONTENT_COLLECTION_NAME = "content";
     private final static String DASHBOARDS_COLLECTION_NAME = "dashboards";
+    private final static String SMALL_DASHBOARDS_COLLECTION_NAME = "dashboardsFinal";
 
     public CompletableFuture<List<Dashboard>> all(User requestingUser) {
         return CompletableFuture.supplyAsync(() -> {
@@ -138,10 +137,10 @@ public class DashboardCrudService {
     public CompletableFuture<List<Dashboard>> hierarchy() {
         return CompletableFuture.supplyAsync(() -> {
             try {
-                List<Dashboard> dashboards = mongoDB.getMongoDatabase()
-                        .getCollection(DASHBOARDS_COLLECTION_NAME, Dashboard.class)
-                        .find()
-                        .into(new ArrayList<>());
+//                List<Dashboard> dashboards = mongoDB.getMongoDatabase()
+//                        .getCollection("dashboardsSmall", Dashboard.class)
+//                        .find()
+//                        .into(new ArrayList<>());
 //
 //                List<Dashboard> parentlessCompanies = dashboards.stream()
 //                        .filter(x -> x.getParentId() == null)
@@ -151,80 +150,93 @@ public class DashboardCrudService {
 //                        .peek(x -> addChildren(x, dashboards))
 //                        .collect(Collectors.toList());
 
-//                List<ObjectId> dashboardIds = dashboards.stream().map(x -> x.getId()).collect(Collectors.toList());
-//                List<ObjectId> parentIds = dashboards.stream().map(x -> x.getParentId()).collect(Collectors.toList());
-//
-//                AtomicInteger count = new AtomicInteger();
-//                dashboards.forEach(x -> {
-//                   if (!dashboardIds.contains(x.getParentId())) {
-//                       x.setParentId(null);
-//                       count.getAndIncrement();
-//                   }
-//                });
-//
-//                mongoDB.getMongoDatabase()
-//                        .getCollection(DASHBOARDS_COLLECTION_NAME, Dashboard.class)
-//                        .drop();
-//
-//                mongoDB.getMongoDatabase()
-//                        .getCollection(DASHBOARDS_COLLECTION_NAME, Dashboard.class)
-//                        .insertMany(dashboards);
-//
-//                System.out.println("COUNT IS: " + count);
-
-
-//
-//                parentlessCompanies.stream().filter(x -> x.getParentId().equals(new ObjectId("62ebd31b100d1ace2e27c374"))).collect(Collectors.toList());
-//                parentlessCompanies.stream().forEach(x -> x.setParentId(null));
-
-//                mongoDB.getMongoDatabase()
-//                        .getCollection(DASHBOARDS_COLLECTION_NAME, Dashboard.class)
-//                        .drop();
-
-//                mongoDB.getMongoDatabase()
-//                        .getCollection(DASHBOARDS_COLLECTION_NAME, Dashboard.class)
-//                        .insertMany(parentlessCompanies);
-
-//                return new ArrayList<>();
-
-
-                List<Bson> pipeline = new ArrayList<>();
-                pipeline.add(Aggregates.graphLookup("dashboardsSmall", "$parentId", "parentId", "id", "children"));
-                //pipeline.add(Aggregates.match(Filters.eq("parentId", null)));
-                pipeline.add(Aggregates.skip(0));
-                pipeline.add(Aggregates.limit(100));
-
-
-//                return mongoDB.getMongoDatabase()
-//                        .getCollection("dashboardsSmall")
-//                        .aggregate(Arrays.asList(new Document("$graphLookup",
-//                                        new Document("from", "dashboards")
-//                                                .append("startWith", "$parentId")
-//                                                .append("connectFromField", "parentId")
-//                                                .append("connectToField", "_id")
-//                                                .append("as", "children")),
-//                                new Document("$match",
-//                                        new Document("parentId",
-//                                                new BsonNull()))))
-//                        .into(new ArrayList<>());
+                List<Bson> pipeline = Arrays.asList(new Document("$match",
+                                new Document("parentId",
+                                        new BsonNull())),
+                        new Document("$graphLookup",
+                                new Document("from", DASHBOARDS_COLLECTION_NAME)
+                                        .append("startWith", "$_id")
+                                        .append("connectFromField", "_id")
+                                        .append("connectToField", "parentId")
+                                        .append("as", "children")
+                                        .append("depthField", "level")),
+                        new Document("$project",
+                                new Document("_id", 1L)
+                                        .append("name", 1L)
+                                        .append("description", 1L)
+                                        .append("parentId", 1L)
+                                        .append("readACL", 1L)
+                                        .append("writeACL", 1L)
+                                        .append("children._id", 1L)
+                                        .append("children.name", 1L)
+                                        .append("children.description", 1L)
+                                        .append("children.parentId", 1L)
+                                        .append("children.readACL", 1L)
+                                        .append("children.writeACL", 1L)
+                                        .append("children.level", 1L)),
+                        new Document("$unwind", "$children"),
+                        new Document("$sort",
+                                new Document("children.level", -1L)),
+                        new Document("$group",
+                                new Document("_id", "$_id")
+                                        .append("name",
+                                                new Document("$first", "$name"))
+                                        .append("description",
+                                                new Document("$first", "$description"))
+                                        .append("readACL",
+                                                new Document("$first", "$readACL"))
+                                        .append("writeACL",
+                                                new Document("$first", "$writeACL"))
+                                        .append("children",
+                                                new Document("$push", "$children"))),
+                        new Document("$addFields",
+                                new Document("children",
+                                        new Document("$reduce",
+                                                new Document("input", "$children")
+                                                        .append("initialValue",
+                                                                new Document("currentLevel", -1L)
+                                                                        .append("currentLevelChildren", Arrays.asList())
+                                                                        .append("previousLevelChildren", Arrays.asList()))
+                                                        .append("in",
+                                                                new Document("$let",
+                                                                        new Document("vars",
+                                                                                new Document("prev",
+                                                                                        new Document("$cond", Arrays.asList(new Document("$eq", Arrays.asList("$$value.currentLevel", "$$this.level")), "$$value.previousLevelChildren", "$$value.currentLevelChildren")))
+                                                                                        .append("current",
+                                                                                                new Document("$cond", Arrays.asList(new Document("$eq", Arrays.asList("$$value.currentLevel", "$$this.level")), "$$value.currentLevelChildren", Arrays.asList()))))
+                                                                                .append("in",
+                                                                                        new Document("currentLevel", "$$this.level")
+                                                                                                .append("previousLevelChildren", "$$prev")
+                                                                                                .append("currentLevelChildren",
+                                                                                                        new Document("$concatArrays", Arrays.asList("$$current", Arrays.asList(new Document("$mergeObjects", Arrays.asList("$$this",
+                                                                                                                new Document("children",
+                                                                                                                        new Document("$filter",
+                                                                                                                                new Document("input", "$$prev")
+                                                                                                                                        .append("as", "e")
+                                                                                                                                        .append("cond",
+                                                                                                                                                new Document("$eq", Arrays.asList("$$e.parentId", "$$this._id"))))))))))))))))),
+                        new Document("$addFields",
+                                new Document("children", "$children.currentLevelChildren")));
 
                 return mongoDB.getMongoDatabase()
-                        .getCollection("dashboardsSmall", Dashboard.class)
+                        .getCollection(DASHBOARDS_COLLECTION_NAME, Dashboard.class)
                         .aggregate(pipeline, Dashboard.class)
                         .into(new ArrayList<>());
+
+
             } catch (Exception e) {
                 throw new CompletionException(new RequestException(Http.Status.INTERNAL_SERVER_ERROR, e));
             }
         });
     }
-//
-//
-//    public void addChildren(Dashboard parent, List<Dashboard> list) {
-//        for (Dashboard x : list) {
-//            if (parent.getId().equals(x.getParentId())) {
-//                parent.getChildren().add(x);
-//                addChildren(x, list);
-//            }
-//        }
-//    }
+
+
+    public void addChildren(Dashboard parent, List<Dashboard> list) {
+        for (Dashboard x : list) {
+            if (parent.getId().equals(x.getParentId())) {
+                parent.getChildren().add(x);
+                addChildren(x, list);
+            }
+        }
+    }
 }

@@ -7,6 +7,14 @@ import akka.cluster.pubsub.DistributedPubSub;
 import akka.cluster.pubsub.DistributedPubSubMediator;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
+import io.exercise.api.models.ChatRoom;
+import io.exercise.api.models.User;
+import io.exercise.api.mongo.IMongoDB;
+import org.bson.types.ObjectId;
+
+import javax.inject.Inject;
+
+import static com.mongodb.client.model.Filters.eq;
 
 /**
  * Chat Actor - Representing a user in a room!
@@ -20,31 +28,39 @@ public class ChatActor extends AbstractActor {
 	/**
 	 * String messages as constants
 	 */
-	private static final String JOINED_ROOM = "Someone Joined the Room!";
-	private static final String LEFT_ROOM = "Someone Left the Room!";
+	private static final String JOINED_ROOM = "has joined the Room!";
+	private static final String LEFT_ROOM = "has left the Room!";
 	private static final String PING = "PING";
 	private static final String PONG = "PONG";
 
 	/**
 	 * Mediator
 	 */
-	private ActorRef mediator = DistributedPubSub.get(getContext().system()).mediator();
+	private final ActorRef mediator = DistributedPubSub.get(getContext().system()).mediator();
 	/**
 	 * Room ID to pub/sub
 	 */
-	private String roomId;
+	private final String roomId;
 	/**
 	 * Web socket represented from the front end
 	 */
-	private ActorRef out;
+	private final ActorRef out;
 
-	public static Props props(ActorRef out, String roomId) {
-		return Props.create(ChatActor.class, () -> new ChatActor(out, roomId));
+	@Inject
+	IMongoDB mongoDB;
+
+	boolean userHasWriteAccess;
+	User user;
+
+	public static Props props(ActorRef out, String roomId, boolean userHasWriteAccess, User user) {
+		return Props.create(ChatActor.class, () -> new ChatActor(out, roomId, userHasWriteAccess, user));
 	}
 
-	private ChatActor(ActorRef out, String roomId) {
+	private ChatActor(ActorRef out, String roomId, boolean userHasWriteAccess, User user) {
 		this.roomId = roomId;
 		this.out = out;
+		this.userHasWriteAccess = userHasWriteAccess;
+		this.user = user;
 		mediator.tell(new DistributedPubSubMediator.Subscribe(roomId, getSelf()), getSelf());
 	}
 
@@ -80,7 +96,7 @@ public class ChatActor extends AbstractActor {
 			return;
 		}
 		String message = what.getMessage();
-		out.tell(message, getSelf());
+        out.tell(message, getSelf());
 	}
 
 	/**
@@ -127,9 +143,18 @@ public class ChatActor extends AbstractActor {
 	 */
 	private void broadcast (String message) {
 		// Publish new content on this room!
-		mediator.tell(
-			new DistributedPubSubMediator.Publish(roomId, new ChatActorProtocol.ChatMessage(message)),
-			getSelf()
-		);
+		String fullMessage = user.getUsername() + ": " + message;
+		if (message.equals(JOINED_ROOM) || message.equals(LEFT_ROOM)){
+			fullMessage = user.getUsername() + " " + message;
+			if (!userHasWriteAccess) {
+				mediator.tell(new DistributedPubSubMediator.Publish(roomId, new ChatActorProtocol.ChatMessage(fullMessage)), getSelf());
+			}
+		}
+		else if (userHasWriteAccess) {
+            mediator.tell(
+                    new DistributedPubSubMediator.Publish(roomId, new ChatActorProtocol.ChatMessage(fullMessage)),
+                    getSelf()
+            );
+        }
 	}
 }
