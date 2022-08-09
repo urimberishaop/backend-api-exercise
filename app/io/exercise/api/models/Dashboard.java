@@ -30,4 +30,6 @@ public class Dashboard extends BaseModel {
     @BsonIgnore
     @BsonProperty("children")
     private List<Dashboard> children = new ArrayList<>();
+    //@BsonIgnore
+    private int level;
 }

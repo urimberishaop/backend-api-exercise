@@ -1,7 +1,9 @@
 package io.exercise.api.services;
 
 import com.google.inject.Inject;
+import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.GraphLookupOptions;
 import io.exercise.api.exceptions.RequestException;
 import io.exercise.api.models.BaseModel;
 import io.exercise.api.models.Content;
@@ -12,12 +14,11 @@ import org.bson.BsonNull;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
+import play.libs.Json;
 import play.mvc.Http;
 
 import javax.inject.Singleton;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -25,6 +26,7 @@ import java.util.stream.Collectors;
 
 import static com.mongodb.client.model.Filters.eq;
 import static com.mongodb.client.model.Filters.in;
+import static java.util.stream.Collectors.groupingBy;
 
 @Singleton
 public class DashboardCrudService {
@@ -137,6 +139,9 @@ public class DashboardCrudService {
     public CompletableFuture<List<Dashboard>> hierarchy() {
         return CompletableFuture.supplyAsync(() -> {
             try {
+
+                            /* THE RECURSIVE JAVA WAY */
+
 //                List<Dashboard> dashboards = mongoDB.getMongoDatabase()
 //                        .getCollection("dashboardsSmall", Dashboard.class)
 //                        .find()
@@ -150,7 +155,9 @@ public class DashboardCrudService {
 //                        .peek(x -> addChildren(x, dashboards))
 //                        .collect(Collectors.toList());
 
-                List<Bson> pipeline = Arrays.asList(new Document("$match",
+
+                            /* THE MONGO WAY */
+                /*List<Bson> pipeline = Arrays.asList(new Document("$match",
                                 new Document("parentId",
                                         new BsonNull())),
                         new Document("$graphLookup",
@@ -221,8 +228,53 @@ public class DashboardCrudService {
                 return mongoDB.getMongoDatabase()
                         .getCollection(DASHBOARDS_COLLECTION_NAME, Dashboard.class)
                         .aggregate(pipeline, Dashboard.class)
-                        .into(new ArrayList<>());
+                        .into(new ArrayList<>());*/
 
+
+                        /* THE COMBINED MONGO JAVA WAY */
+
+                int skip = 1, limit = 1;
+                List<Bson> pipeline = Arrays.asList(new Document("$match",
+                                new Document("parentId",
+                                        new BsonNull())),
+                        new Document("$graphLookup",
+                        new Document("from", DASHBOARDS_COLLECTION_NAME)
+                                .append("startWith", "$_id")
+                                .append("connectFromField", "_id")
+                                .append("connectToField", "parentId")
+                                .append("as", "children")
+                                .append("depthField", "level")),
+                        Aggregates.skip(skip),
+                        Aggregates.limit(limit));
+
+                Dashboard d = mongoDB.getMongoDatabase()
+                        .getCollection(DASHBOARDS_COLLECTION_NAME, Dashboard.class)
+                        .aggregate(pipeline, Dashboard.class)
+                        .first();
+
+
+                if (d == null) {
+                    throw new CompletionException(new RequestException(Http.Status.NOT_FOUND, "No dashboards found."));
+                }
+
+                Map<ObjectId, List<Dashboard>> map = d.getChildren()
+                        .stream()
+                        .collect(groupingBy(Dashboard::getParentId));
+
+                map = map.entrySet().stream()
+                        .sorted((x,y) -> y.getValue().get(0).getLevel() - x.getValue().get(0).getLevel())
+                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue,
+                                (e1, e2) -> e1, LinkedHashMap::new));
+
+                map.forEach((key, value) -> {
+                    Dashboard test = d.getChildren().stream().filter(child -> child.getId().equals(key)).findAny().orElse(null);
+                    if (test != null) {
+                        test.setChildren(value);
+                        value.forEach(duplicate -> d.getChildren().remove(duplicate));
+                    }
+                });
+
+                return List.of(d);
 
             } catch (Exception e) {
                 throw new CompletionException(new RequestException(Http.Status.INTERNAL_SERVER_ERROR, e));
