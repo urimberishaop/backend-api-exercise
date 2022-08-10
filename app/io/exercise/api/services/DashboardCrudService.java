@@ -157,7 +157,7 @@ public class DashboardCrudService {
 
 
                             /* THE MONGO WAY */
-                /*List<Bson> pipeline = Arrays.asList(new Document("$match",
+                List<Bson> pipeline = Arrays.asList(new Document("$match",
                                 new Document("parentId",
                                         new BsonNull())),
                         new Document("$graphLookup",
@@ -228,12 +228,12 @@ public class DashboardCrudService {
                 return mongoDB.getMongoDatabase()
                         .getCollection(DASHBOARDS_COLLECTION_NAME, Dashboard.class)
                         .aggregate(pipeline, Dashboard.class)
-                        .into(new ArrayList<>());*/
+                        .into(new ArrayList<>());
 
 
                         /* THE COMBINED MONGO JAVA WAY */
 
-                int skip = 1, limit = 1;
+                /*int skip = 0, limit = 1;
                 List<Bson> pipeline = Arrays.asList(new Document("$match",
                                 new Document("parentId",
                                         new BsonNull())),
@@ -251,7 +251,6 @@ public class DashboardCrudService {
                         .getCollection(DASHBOARDS_COLLECTION_NAME, Dashboard.class)
                         .aggregate(pipeline, Dashboard.class)
                         .first();
-
 
                 if (d == null) {
                     throw new CompletionException(new RequestException(Http.Status.NOT_FOUND, "No dashboards found."));
@@ -273,8 +272,7 @@ public class DashboardCrudService {
                         value.forEach(duplicate -> d.getChildren().remove(duplicate));
                     }
                 });
-
-                return List.of(d);
+                return List.of(d);*/
 
             } catch (Exception e) {
                 throw new CompletionException(new RequestException(Http.Status.INTERNAL_SERVER_ERROR, e));

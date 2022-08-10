@@ -46,20 +46,17 @@ public class ChatActor extends AbstractActor {
 	 */
 	private final ActorRef out;
 
-	@Inject
-	IMongoDB mongoDB;
-
 	boolean userHasWriteAccess;
 	User user;
 
-	public static Props props(ActorRef out, String roomId, boolean userHasWriteAccess, User user) {
-		return Props.create(ChatActor.class, () -> new ChatActor(out, roomId, userHasWriteAccess, user));
+	public static Props props(ActorRef out, String roomId, User user) {
+		return Props.create(ChatActor.class, () -> new ChatActor(out, roomId, user));
 	}
 
-	private ChatActor(ActorRef out, String roomId, boolean userHasWriteAccess, User user) {
+	private ChatActor(ActorRef out, String roomId, User user) {
 		this.roomId = roomId;
 		this.out = out;
-		this.userHasWriteAccess = userHasWriteAccess;
+		this.userHasWriteAccess = user.isWriteAccess();
 		this.user = user;
 		mediator.tell(new DistributedPubSubMediator.Subscribe(roomId, getSelf()), getSelf());
 	}
@@ -127,14 +124,14 @@ public class ChatActor extends AbstractActor {
 	 * Sends a simple JOINED_ROOM message
 	 */
 	private void joinTheRoom () {
-		this.broadcast(JOINED_ROOM);
+		out.tell(String.format("%s: %s", user.getUsername(), JOINED_ROOM), getSelf());
 	}
 
 	/**
 	 * Sends a simple LEFT_ROOM message
 	 */
 	private void leaveTheRoom () {
-		this.broadcast(LEFT_ROOM);
+		out.tell(String.format("%s: %s", user.getUsername(), LEFT_ROOM), getSelf());
 	}
 
 	/**
@@ -142,19 +139,12 @@ public class ChatActor extends AbstractActor {
 	 * @param message
 	 */
 	private void broadcast (String message) {
-		// Publish new content on this room!
-		String fullMessage = user.getUsername() + ": " + message;
-		if (message.equals(JOINED_ROOM) || message.equals(LEFT_ROOM)){
-			fullMessage = user.getUsername() + " " + message;
-			if (!userHasWriteAccess) {
-				mediator.tell(new DistributedPubSubMediator.Publish(roomId, new ChatActorProtocol.ChatMessage(fullMessage)), getSelf());
-			}
-		}
-		else if (userHasWriteAccess) {
-            mediator.tell(
-                    new DistributedPubSubMediator.Publish(roomId, new ChatActorProtocol.ChatMessage(fullMessage)),
-                    getSelf()
-            );
+		if (!userHasWriteAccess) {
+			out.tell(String.format("%s, you have no access to message in this room.", user.getUsername()), getSelf());
+			return;
         }
+		mediator.tell(
+				new DistributedPubSubMediator.Publish(roomId, new ChatActorProtocol.ChatMessage(
+						String.format("%s: %s", user.getUsername(), message))), getSelf());
 	}
 }
