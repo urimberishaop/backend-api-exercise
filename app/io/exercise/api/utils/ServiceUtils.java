@@ -15,6 +15,8 @@ import io.exercise.api.exceptions.RequestException;
 import io.exercise.api.models.ChatRoom;
 import io.exercise.api.models.User;
 import io.exercise.api.mongo.IMongoDB;
+import org.bson.Document;
+import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 import play.libs.F;
 import play.libs.Json;
@@ -26,6 +28,8 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 
+import static com.mongodb.client.model.Filters.eq;
+import static com.mongodb.client.model.Filters.in;
 import static play.mvc.Results.status;
 
 public class ServiceUtils {
@@ -158,4 +162,33 @@ public class ServiceUtils {
         }
         return statusFromThrowable(error.getCause());
     }
+
+
+    public static Bson readAccessFilter (User requestingUser) {
+        return Filters.or(
+                in("readACL", requestingUser.getId().toString()),
+                in("readACL", requestingUser.getRoles()),
+                in("writeACL", requestingUser.getId().toString()),
+                in("writeACL", requestingUser.getRoles()),
+                eq("readACL", new ArrayList<>()),
+                eq("writeACL", new ArrayList<>()));
+    }
+
+    public static Bson writeAccessFilter (User requestingUser) {
+        return Filters.or(
+                in("writeACL", requestingUser.getId().toString()),
+                in("writeACL", requestingUser.getRoles()),
+                eq("writeACL", new ArrayList<>()));
+    }
+
+    public static Document graphLookupEdited(String from, String startWith, String connectFromField, String connectToField, String as, String depthField) {
+        return new Document("$graphLookup",
+                new Document("from", from)
+                        .append("startWith", startWith)
+                        .append("connectFromField", connectFromField)
+                        .append("connectToField", connectToField)
+                        .append("as", as)
+                        .append("depthField", depthField));
+    }
+
 }

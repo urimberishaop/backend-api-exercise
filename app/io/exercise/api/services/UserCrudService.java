@@ -22,6 +22,10 @@ public class UserCrudService {
 
     private static final String USERS_COLLECTION_NAME = "users";
 
+    /**
+     * Returns the users stored in our Mongo collection
+     * @return the list of all users
+     */
     public CompletableFuture<List<User>> all() {
         return CompletableFuture.supplyAsync(() -> {
             try {
@@ -35,6 +39,11 @@ public class UserCrudService {
         });
     }
 
+    /**
+     * Adds a user to the Mongo collection
+     * @param user the user
+     * @return the user that's been added
+     */
     public CompletableFuture<User> create(User user) {
         return CompletableFuture.supplyAsync(() -> {
             try {
@@ -49,6 +58,12 @@ public class UserCrudService {
         });
     }
 
+    /**
+     * Updates a user
+     * @param user the updated user
+     * @param id the ID of the user that's going to be updated
+     * @return the updated user
+     */
     public CompletableFuture<User> update(User user, String id) {
         return CompletableFuture.supplyAsync(() -> {
             try {
@@ -64,6 +79,11 @@ public class UserCrudService {
         });
     }
 
+    /**
+     * Deletes a user from the Mongo collection
+     * @param id the ID of the user that's going to be deleted
+     * @return the user that's been deleted
+     */
     public CompletableFuture<User> delete(String id) {
         return CompletableFuture.supplyAsync(() -> {
             try {

@@ -7,6 +7,7 @@ import io.exercise.api.models.Content;
 import io.exercise.api.models.Dashboard;
 import io.exercise.api.models.User;
 import io.exercise.api.mongo.IMongoDB;
+import io.exercise.api.utils.ServiceUtils;
 import org.bson.types.ObjectId;
 import play.mvc.Http;
 
@@ -22,20 +23,23 @@ public class ContentCrudService {
     IMongoDB mongoDB;
 
     private static final String CONTENT_COLLECTION_NAME = "content";
-    private static final String USERS_COLLECTION_NAME = "users";
     private static final String DASHBOARDS_COLLECTION_NAME = "dashboards";
 
-    public CompletableFuture<List<Content>> all(User requestingUser) {
+    /**
+     * Returns a list of all the content in a dashboard
+     * @param requestingUser the user
+     * @return the list of all content the user can see
+     */
+    public CompletableFuture<List<Content>> all(User requestingUser, String id, int skip, int limit) {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 return mongoDB.getMongoDatabase()
                         .getCollection(CONTENT_COLLECTION_NAME, Content.class)
-                        .find(Filters.or(
-                                Filters.eq("readACL", requestingUser.getId().toString()),
-                                Filters.in("readACL", requestingUser.getRoles()),
-                                Filters.eq("writeACL", requestingUser.getId().toString()),
-                                Filters.in("writeACL", requestingUser.getRoles()),
-                                Filters.eq("readACL", new ArrayList<>())))
+                        .find(Filters.and(
+                                ServiceUtils.readAccessFilter(requestingUser),
+                                Filters.eq("dashboardId", new ObjectId(id))))
+                        .skip(skip)
+                        .limit(limit)
                         .into(new ArrayList<>());
             } catch (Exception e) {
                 throw new CompletionException(new RequestException(Http.Status.INTERNAL_SERVER_ERROR, e));
@@ -43,6 +47,12 @@ public class ContentCrudService {
         });
     }
 
+    /**
+     * Adds content to the Mongo collection
+     * @param contents the list of content that's going to be added
+     * @param requestingUser the user that's going to add
+     * @return a list of the content that's been added
+     */
     public CompletableFuture<List<Content>> create(List<Content> contents, User requestingUser) {
         return CompletableFuture.supplyAsync(() -> {
             try {
@@ -58,7 +68,7 @@ public class ContentCrudService {
                             .first();
 
                     if (requiredDashboard == null) {
-                        return;
+                        throw new CompletionException(new RequestException(Http.Status.NOT_FOUND, "Dashboard not found for this content."));
                     }
 
                     mongoDB.getMongoDatabase()
@@ -72,6 +82,13 @@ public class ContentCrudService {
         });
     }
 
+    /**
+     * Updates a content record in the Mongo collection
+     * @param content the updated content
+     * @param id the ID of the content that's going to be updated
+     * @param requestingUser the user that's trying to update content
+     * @return the updated content
+     */
     public CompletableFuture<Content> update(Content content, String id, User requestingUser) {
         return CompletableFuture.supplyAsync(() -> {
             try {
@@ -90,6 +107,12 @@ public class ContentCrudService {
         });
     }
 
+    /**
+     * Deletes a content record from the Mongo collection
+     * @param id the content's ID
+     * @param requestingUser the User that's making a delete request
+     * @return the content record that's been deleted
+     */
     public CompletableFuture<Content> delete(String id, User requestingUser) {
         return CompletableFuture.supplyAsync(() -> {
             try {

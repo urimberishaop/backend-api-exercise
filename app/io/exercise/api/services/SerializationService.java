@@ -104,25 +104,6 @@ public class SerializationService {
         }, ec.current());
     }
 
-//    public <T> CompletableFuture<List<T>> parseFileOfType(Request request, String key, Class<T> valueType) {
-//        return CompletableFuture.supplyAsync(() -> {
-//            Http.MultipartFormData<File> data = request.body().asMultipartFormData();
-//            if (data.getFiles().size() == 0) {
-//                throw new CompletionException(new RequestException(Http.Status.BAD_REQUEST, "invalid_parameters"));
-//            }
-//            File file = data.getFile(key).getFile();
-//            try {
-//                JsonNode content = this.fileToObjectNode(file);
-//                return DatabaseUtils.parseJsonListOfType(content, valueType);
-//            } catch (JsonProcessingException e) {
-//                throw new CompletionException(new RequestException(Http.Status.BAD_REQUEST, "parsing_exception"));
-//            } catch (Exception e) {
-//                throw new CompletionException(new RequestException(Http.Status.INTERNAL_SERVER_ERROR, "service_unavailable"));
-//            }
-//        }, ec.current());
-//    }
-
-
     public JsonNode fileToObjectNode (File which) throws IOException {
         try (JsonParser parser = mapper.getFactory().createParser(which)) {
             return mapper.readTree(parser);

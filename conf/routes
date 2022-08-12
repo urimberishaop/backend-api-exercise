@@ -12,16 +12,16 @@ POST    /api/authenticate                    @io.exercise.api.controllers.Authen
 
 
 POST    /api/dashboard                       @io.exercise.api.controllers.DashboardCrudController.create(request: Request)
-GET     /api/dashboard                       @io.exercise.api.controllers.DashboardCrudController.all(request: Request)
+GET     /api/dashboard                       @io.exercise.api.controllers.DashboardCrudController.all(request: Request, skip: Int ?= 0, limit: Int ?= 10)
 PUT     /api/dashboard/:id                   @io.exercise.api.controllers.DashboardCrudController.update(request: Request, id: String)
 DELETE  /api/dashboard/:id                   @io.exercise.api.controllers.DashboardCrudController.delete(request: Request, id: String)
 
 
-GET     /api/dashboard/:id/content           @io.exercise.api.controllers.ContentCrudController.all(request: Request, id: String)
+GET     /api/dashboard/:id/content           @io.exercise.api.controllers.ContentCrudController.all(request: Request, id: String, skip: Int ?= 0, limit: Int ?= 50)
 POST    /api/dashboard/content               @io.exercise.api.controllers.ContentCrudController.create(request: Request)
 PUT     /api/dashboard/:id/content           @io.exercise.api.controllers.ContentCrudController.update(request: Request, id: String)
 DELETE  /api/dashboard/:id/content           @io.exercise.api.controllers.ContentCrudController.delete(request: Request, id: String)
-GET     /api/dashboard/hierarchy             @io.exercise.api.controllers.DashboardCrudController.hierarchy(request: Request)
+GET     /api/dashboard/hierarchy             @io.exercise.api.controllers.DashboardCrudController.hierarchy(request: Request, skip: Int ?= 0, limit: Int ?= 10)
 
 
 POST    /api/user                            @io.exercise.api.controllers.UserCrudController.create(request: Request)

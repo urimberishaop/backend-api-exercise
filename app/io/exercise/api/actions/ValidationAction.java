@@ -11,6 +11,9 @@ import play.mvc.Result;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
+/**
+ * Validates an object with HibernateValidator.
+ */
 public class ValidationAction extends Action<Validation> {
 
     @Override

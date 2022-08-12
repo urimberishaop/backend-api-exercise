@@ -13,6 +13,7 @@ import play.mvc.Http;
 
 import javax.inject.Singleton;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 
@@ -23,6 +24,11 @@ public class AuthenticationService {
 
     private static final String USERS_COLLECTION_NAME = "users";
 
+    /**
+     * Authenticates a user and returns a token.
+     * @param user the User that's being authenticated
+     * @return the JWT (token)
+     */
     public CompletableFuture<String> authenticate(User user) {
         return CompletableFuture.supplyAsync(() -> {
             try {

@@ -24,6 +24,11 @@ public class AuthenticationController extends Controller {
     @Inject
     AuthenticationService service;
 
+    /**
+     * The controller for authenticating a user.
+     * @param request the request that contains the user
+     * @return the JWT (token) as Json
+     */
     public CompletableFuture<Result> authenticate(Http.Request request) {
         return serializationService.parseBodyOfType(request, User.class)
                 .thenCompose((data) -> service.authenticate(data))

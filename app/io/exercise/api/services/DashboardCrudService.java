@@ -1,7 +1,6 @@
 package io.exercise.api.services;
 
 import com.google.inject.Inject;
-import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import io.exercise.api.exceptions.RequestException;
@@ -10,6 +9,7 @@ import io.exercise.api.models.Content;
 import io.exercise.api.models.Dashboard;
 import io.exercise.api.models.User;
 import io.exercise.api.mongo.IMongoDB;
+import io.exercise.api.utils.ServiceUtils;
 import org.bson.BsonNull;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -22,11 +22,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-
-import static com.mongodb.client.model.Filters.eq;
-import static com.mongodb.client.model.Filters.in;
 
 @Singleton
 public class DashboardCrudService {
@@ -36,49 +32,35 @@ public class DashboardCrudService {
     private static final String CONTENT_COLLECTION_NAME = "content";
     private final static String DASHBOARDS_COLLECTION_NAME = "dashboards";
 
-    public CompletableFuture<List<Dashboard>> all(User requestingUser) {
+    /**
+     * Returns the list of all dashboards (with content) the user is authorized to see
+     * @param requestingUser the user
+     * @param skip skip for pagination
+     * @param limit limit for pagination
+     * @return the list of all dashboards matching the criteria
+     */
+    public CompletableFuture<List<Dashboard>> all(User requestingUser, int skip, int limit) {
         return CompletableFuture.supplyAsync(() -> {
             try {
-                AtomicInteger skip = new AtomicInteger();
-                int limit = 100;
+                List<Dashboard> dashboards = mongoDB.getMongoDatabase()
+                        .getCollection(DASHBOARDS_COLLECTION_NAME, Dashboard.class)
+                        .find(ServiceUtils.readAccessFilter(requestingUser))
+                        .skip(skip)
+                        .limit(limit)
+                        .into(new ArrayList<>());
 
-                Bson accessFilter = Filters.or(
-                        in("readACL", requestingUser.getId().toString()),
-                        in("readACL", requestingUser.getRoles()),
-                        in("writeACL", requestingUser.getId().toString()),
-                        in("writeACL", requestingUser.getRoles()),
-                        eq("readACL", new ArrayList<>()),
-                        eq("writeACL", new ArrayList<>()));
+                List<Content> contents = mongoDB.getMongoDatabase()
+                        .getCollection(CONTENT_COLLECTION_NAME, Content.class)
+                        .find(Filters.and(
+                                Filters.in("dashboardId", dashboards.stream().map(BaseModel::getId).collect(Collectors.toList())),
+                                ServiceUtils.readAccessFilter(requestingUser)))
+                        .into(new ArrayList<>());
 
-                long count = mongoDB.getMongoDatabase()
-                        .getCollection(DASHBOARDS_COLLECTION_NAME)
-                        .countDocuments(accessFilter);
-
-                List<Dashboard> dashboards = new ArrayList<>();
-
-                while (skip.get() < count) {
-                    dashboards = mongoDB.getMongoDatabase()
-                            .getCollection(DASHBOARDS_COLLECTION_NAME, Dashboard.class)
-                            .find(accessFilter)
-                            .skip(skip.get())
-                            .limit(limit)
-                            .into(new ArrayList<>());
-
-                    List<Content> contents = mongoDB.getMongoDatabase()
-                            .getCollection(CONTENT_COLLECTION_NAME, Content.class)
-                            .find(Filters.and(
-                                    Filters.in("dashboardId", dashboards.stream().map(BaseModel::getId).collect(Collectors.toList())),
-                                    accessFilter))
-                            .into(new ArrayList<>());
-
-                    dashboards.forEach(dashboard -> {
-                        dashboard.setItems(contents.stream()
-                                .filter(content -> content.getDashboardId().equals(dashboard.getId()))
-                                .collect(Collectors.toList()));
-
-                        skip.addAndGet(limit);
-                    });
-                }
+                dashboards.forEach(dashboard ->
+                        dashboard.setItems(
+                                contents.stream()
+                                        .filter(content -> content.getDashboardId().equals(dashboard.getId()))
+                                        .collect(Collectors.toList())));
                 return dashboards;
             } catch (Exception e) {
                 throw new CompletionException(new RequestException(Http.Status.INTERNAL_SERVER_ERROR, e));
@@ -86,6 +68,11 @@ public class DashboardCrudService {
         });
     }
 
+    /**
+     * Adds a dashboard to the Mongo collection
+     * @param dashboard the dashboard
+     * @return the dashboard that's been added
+     */
     public CompletableFuture<Dashboard> create(Dashboard dashboard) {
         return CompletableFuture.supplyAsync(() -> {
             try {
@@ -94,31 +81,41 @@ public class DashboardCrudService {
                         .insertOne(dashboard);
                 return dashboard;
             } catch (Exception e) {
-                throw new CompletionException(new RequestException(Http.Status.INTERNAL_SERVER_ERROR, "Something went wrong. " + e.getMessage()));
+                throw new CompletionException(new RequestException(Http.Status.INTERNAL_SERVER_ERROR, e));
             }
         });
     }
 
+    /**
+     * Updates a dashboard in the Mongo collection
+     * @param dashboard the dashboard
+     * @return the dashboard that's been updated
+     */
     public CompletableFuture<Dashboard> update(Dashboard dashboard, String id, User requestingUser) {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 dashboard.setId(null);
                 return mongoDB.getMongoDatabase()
                         .getCollection(DASHBOARDS_COLLECTION_NAME, Dashboard.class)
-                        .findOneAndReplace(Filters.and(
-                                Filters.eq("_id", new ObjectId(id)),
-                                Filters.or(
-                                        eq("writeACL", requestingUser.getId().toString()),
-                                        in("writeACL", requestingUser.getRoles()),
-                                        eq("writeACL", new ArrayList<>()))), dashboard);
+                        .findOneAndReplace(
+                                Filters.and(
+                                        Filters.eq("_id", new ObjectId(id)),
+                                        ServiceUtils.writeAccessFilter(requestingUser)),
+                                dashboard);
             } catch (CompletionException e) {
                 throw new CompletionException(new RequestException(Http.Status.NOT_FOUND, "Dashboard not found."));
             } catch (Exception e) {
-                throw new CompletionException(new RequestException(Http.Status.INTERNAL_SERVER_ERROR, "Something went wrong. " + e.getMessage()));
+                throw new CompletionException(new RequestException(Http.Status.INTERNAL_SERVER_ERROR, e));
             }
         });
     }
 
+    /**
+     * Deletes a dashboard from the Mongo collection
+     * @param id the dashboard's ID
+     * @param requestingUser the User that's making a delete request
+     * @return the dashboard that's been deleted
+     */
     public CompletableFuture<Dashboard> delete(String id, User requestingUser) {
         return CompletableFuture.supplyAsync(() -> {
             try {
@@ -126,34 +123,44 @@ public class DashboardCrudService {
                         .getCollection(DASHBOARDS_COLLECTION_NAME, Dashboard.class)
                         .findOneAndDelete(Filters.and(
                                 Filters.eq("_id", new ObjectId(id)),
-                                Filters.or(
-                                        Filters.eq("writeACL", requestingUser.getId().toString()),
-                                        Filters.in("writeACL", requestingUser.getRoles()),
-                                        Filters.eq("writeACL", new ArrayList<>()))));
+                                ServiceUtils.writeAccessFilter(requestingUser)));
             } catch (Exception e) {
-                throw new CompletionException(new RequestException(Http.Status.NOT_FOUND, "User not found. Please re-check your input."));
+                throw new CompletionException(new RequestException(Http.Status.NOT_FOUND, "User not found."));
             }
         });
     }
 
-    public CompletableFuture<List<Dashboard>> hierarchy() {
+    /**
+     * Returns the dashboards in a hierarchical manner together with their items
+     * @param requestingUser the user that's making the request
+     * @param skip the pagination skip
+     * @param limit the pagination limit
+     * @return the list of dashboards structured in a hierarchical manner
+     */
+    public CompletableFuture<List<Dashboard>> hierarchy(User requestingUser, int skip, int limit) {
         return CompletableFuture.supplyAsync(() -> {
             try {
-                int skip = 0, limit = 1;
                 List<Bson> pipeline = Arrays.asList(
+                        Aggregates.match(ServiceUtils.readAccessFilter(requestingUser)),
                         Aggregates.match(new Document("parentId", new BsonNull())),
-                        new Document("$graphLookup",
-                                new Document("from", DASHBOARDS_COLLECTION_NAME)
-                                        .append("startWith", "$_id")
-                                        .append("connectFromField", "_id")
-                                        .append("connectToField", "parentId")
-                                        .append("as", "children")
-                                        .append("depthField", "level")),
+                        ServiceUtils.graphLookupEdited(DASHBOARDS_COLLECTION_NAME, "$_id", "_id",
+                                "parentId", "children", "level"),
                         Aggregates.skip(skip),
                         Aggregates.limit(limit));
+
                 List<Dashboard> parentlessDashboards = mongoDB.getMongoDatabase()
                         .getCollection(DASHBOARDS_COLLECTION_NAME, Dashboard.class)
                         .aggregate(pipeline, Dashboard.class)
+                        .into(new ArrayList<>());
+
+                List<ObjectId> ids = parentlessDashboards.stream().map(BaseModel::getId).collect(Collectors.toList());
+                parentlessDashboards.forEach(dash -> {
+                    ids.addAll(dash.getChildren().stream().map(BaseModel::getId).collect(Collectors.toList()));
+                });
+
+                List<Content> contents = mongoDB.getMongoDatabase()
+                        .getCollection(CONTENT_COLLECTION_NAME, Content.class)
+                        .find(Filters.in("dashboardId", ids))
                         .into(new ArrayList<>());
 
                 return parentlessDashboards.stream()
@@ -166,23 +173,15 @@ public class DashboardCrudService {
                             dashboard.setChildren(children.stream().filter(x -> x.getLevel() == 0).collect(Collectors.toList()));
 
                             //Adding content
-                            List<ObjectId> ids = children.stream().map(BaseModel::getId).collect(Collectors.toList());
-                            ids.addAll(parentlessDashboards.stream().map(BaseModel::getId).collect(Collectors.toList()));
+                            children.forEach(child -> child.setItems(
+                                    contents.stream()
+                                            .filter(content -> content.getDashboardId().equals(child.getId()))
+                                            .collect(Collectors.toList())));
 
-                            children.forEach(child -> {
-                                List<Content> contents = mongoDB.getMongoDatabase()
-                                        .getCollection(CONTENT_COLLECTION_NAME, Content.class)
-                                        .find(Filters.in("dashboardId", ids))
-                                        .into(new ArrayList<>());
+                            dashboard.setItems(contents.stream()
+                                    .filter(content -> content.getDashboardId().equals(dashboard.getId()))
+                                    .collect(Collectors.toList()));
 
-                                child.setItems(contents.stream()
-                                        .filter(content -> content.getDashboardId().equals(child.getId()))
-                                        .collect(Collectors.toList()));
-
-                                dashboard.setItems(contents.stream()
-                                        .filter(content -> content.getDashboardId().equals(dashboard.getId()))
-                                        .collect(Collectors.toList()));
-                            });
                         }).collect(Collectors.toList());
 
             } catch (Exception e) {
@@ -191,6 +190,11 @@ public class DashboardCrudService {
         });
     }
 
+    /**
+     * The recursive method for adding children dashboards into their parents' children list
+     * @param parent the parent dashboard (should be one that has no parentId)
+     * @param list the list of all dashboards
+     */
     public void addChildren(Dashboard parent, List<Dashboard> list) {
         for (Dashboard x : list) {
             if (parent.getId().equals(x.getParentId())) {
