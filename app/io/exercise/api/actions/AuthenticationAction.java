@@ -18,22 +18,22 @@ import java.util.concurrent.CompletionStage;
  */
 public class AuthenticationAction extends Action<Authentication> {
 
-    @Inject
-    IMongoDB mongoDB;
+	@Inject
+	IMongoDB mongoDB;
 
-    @Inject
-    Config config;
+	@Inject
+	Config config;
 
-    @Override
-    public CompletionStage<Result> call(Http.Request request) {
-        try {
-            User user = ServiceUtils.getUserFromRequest(request, mongoDB, config).join();
-            return delegate.call(request.addAttr(Attributes.USER_TYPED_KEY, user));
-        } catch (CompletionException e) {
-            return CompletableFuture.completedFuture(badRequest(e.getMessage()));
-        } catch (Exception e) {
-            e.printStackTrace();
-            return CompletableFuture.completedFuture(badRequest(e.toString()));
-        }
-    }
+	@Override
+	public CompletionStage<Result> call(Http.Request request) {
+		try {
+			User user = ServiceUtils.getUserFromRequest(request, mongoDB, config).join();
+			return delegate.call(request.addAttr(Attributes.USER_TYPED_KEY, user));
+		} catch (CompletionException e) {
+			return CompletableFuture.completedFuture(badRequest(e.getMessage()));
+		} catch (Exception e) {
+			e.printStackTrace();
+			return CompletableFuture.completedFuture(badRequest(e.toString()));
+		}
+	}
 }

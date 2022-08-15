@@ -7,14 +7,7 @@ import akka.cluster.pubsub.DistributedPubSub;
 import akka.cluster.pubsub.DistributedPubSubMediator;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
-import io.exercise.api.models.ChatRoom;
 import io.exercise.api.models.User;
-import io.exercise.api.mongo.IMongoDB;
-import org.bson.types.ObjectId;
-
-import javax.inject.Inject;
-
-import static com.mongodb.client.model.Filters.eq;
 
 /**
  * Chat Actor - Representing a user in a room!
@@ -64,18 +57,19 @@ public class ChatActor extends AbstractActor {
 	@Override
 	public Receive createReceive() {
 		return receiveBuilder()
-				.match(String.class, this::onMessageReceived)
-				.match(ChatActorProtocol.ChatMessage.class, this::onChatMessageReceived)
-				.match(DistributedPubSubMediator.SubscribeAck.class, this::onSubscribe)
-				.match(DistributedPubSubMediator.UnsubscribeAck.class, this::onUnsubscribe)
-				.build();
+			.match(String.class, this::onMessageReceived)
+			.match(ChatActorProtocol.ChatMessage.class, this::onChatMessageReceived)
+			.match(DistributedPubSubMediator.SubscribeAck.class, this::onSubscribe)
+			.match(DistributedPubSubMediator.UnsubscribeAck.class, this::onUnsubscribe)
+			.build();
 	}
 
 	/**
-	 * Receiver of socket messages comming from the front end
+	 * Receiver of socket messages coming from the front end
+	 *
 	 * @param message
 	 */
-	public void onMessageReceived (String message) {
+	public void onMessageReceived(String message) {
 		if (message.equals(PING)) {
 			out.tell(PONG, getSelf());
 			return;
@@ -85,30 +79,33 @@ public class ChatActor extends AbstractActor {
 
 	/**
 	 * Chat Message Protocol message receiver
+	 *
 	 * @param what
 	 */
-	public void onChatMessageReceived (ChatActorProtocol.ChatMessage what) {
+	public void onChatMessageReceived(ChatActorProtocol.ChatMessage what) {
 		// Don't send messages back that came from this socket
 		if (getSender().equals(getSelf())) {
 			return;
 		}
 		String message = what.getMessage();
-        out.tell(message, getSelf());
+		out.tell(message, getSelf());
 	}
 
 	/**
 	 * When a subscribe message is received, this method gets called
+	 *
 	 * @param message
 	 */
-	public void onSubscribe (DistributedPubSubMediator.SubscribeAck message) {
+	public void onSubscribe(DistributedPubSubMediator.SubscribeAck message) {
 		this.joinTheRoom();
 	}
 
 	/**
 	 * When an unsubscribe message is received, this method gets called
+	 *
 	 * @param message
 	 */
-	public void onUnsubscribe (DistributedPubSubMediator.UnsubscribeAck message) {
+	public void onUnsubscribe(DistributedPubSubMediator.UnsubscribeAck message) {
 		this.leaveTheRoom();
 	}
 
@@ -123,28 +120,29 @@ public class ChatActor extends AbstractActor {
 	/**
 	 * Sends a simple JOINED_ROOM message
 	 */
-	private void joinTheRoom () {
+	private void joinTheRoom() {
 		out.tell(String.format("%s: %s", user.getUsername(), JOINED_ROOM), getSelf());
 	}
 
 	/**
 	 * Sends a simple LEFT_ROOM message
 	 */
-	private void leaveTheRoom () {
+	private void leaveTheRoom() {
 		out.tell(String.format("%s: %s", user.getUsername(), LEFT_ROOM), getSelf());
 	}
 
 	/**
 	 * Publish message to the current room
+	 *
 	 * @param message
 	 */
-	private void broadcast (String message) {
+	private void broadcast(String message) {
 		if (!userHasWriteAccess) {
 			out.tell(String.format("%s, you have no access to message in this room.", user.getUsername()), getSelf());
 			return;
-        }
+		}
 		mediator.tell(
-				new DistributedPubSubMediator.Publish(roomId, new ChatActorProtocol.ChatMessage(
-						String.format("%s: %s", user.getUsername(), message))), getSelf());
+			new DistributedPubSubMediator.Publish(roomId, new ChatActorProtocol.ChatMessage(
+				String.format("%s: %s", user.getUsername(), message))), getSelf());
 	}
 }

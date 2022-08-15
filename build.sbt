@@ -18,6 +18,7 @@ lazy val root = (project in file("."))
     name := """backend-exercise-api""",
     libraryDependencies ++= Seq(
       guice,
+      "junit" % "junit" % "4.12",
       "com.auth0" % "java-jwt" % "3.3.0",
       "org.mongodb" % "mongodb-driver-sync" % "4.3.0",
       "org.projectlombok" % "lombok" % "1.18.12",

@@ -18,22 +18,23 @@ import java.util.concurrent.CompletableFuture;
  */
 public class AuthenticationController extends Controller {
 
-    @Inject
-    SerializationService serializationService;
+	@Inject
+	SerializationService serializationService;
 
-    @Inject
-    AuthenticationService service;
+	@Inject
+	AuthenticationService service;
 
-    /**
-     * The controller for authenticating a user.
-     * @param request the request that contains the user
-     * @return the JWT (token) as Json
-     */
-    public CompletableFuture<Result> authenticate(Http.Request request) {
-        return serializationService.parseBodyOfType(request, User.class)
-                .thenCompose((data) -> service.authenticate(data))
-                .thenCompose((data) -> serializationService.toJsonNode(data))
-                .thenApply(Results::ok)
-                .exceptionally(DatabaseUtils::throwableToResult);
-    }
+	/**
+	 * The controller for authenticating a user.
+	 *
+	 * @param request the request that contains the user
+	 * @return the JWT (token) as Json
+	 */
+	public CompletableFuture<Result> authenticate(Http.Request request) {
+		return serializationService.parseBodyOfType(request, User.class)
+			.thenCompose((data) -> service.authenticate(data))
+			.thenCompose((data) -> serializationService.toJsonNode(data))
+			.thenApply(Results::ok)
+			.exceptionally(DatabaseUtils::throwableToResult);
+	}
 }
