@@ -3,6 +3,7 @@ package io.exercise.api.controllers;
 import io.exercise.api.actions.Authentication;
 import io.exercise.api.actions.Validation;
 import io.exercise.api.models.Content;
+import io.exercise.api.models.Dashboard;
 import io.exercise.api.services.ContentCrudService;
 import io.exercise.api.services.SerializationService;
 import io.exercise.api.utils.DatabaseUtils;
@@ -34,7 +35,7 @@ public class ContentCrudController extends Controller {
 	 * @param request the request containing the content
 	 * @return the content that's added (as Json)
 	 */
-	@Validation
+	@Validation(type = Content.class)
 	public CompletableFuture<Result> create(Http.Request request) {
 		return serializationService.parseListBodyOfType(request, Content.class)
 			.thenCompose((data) -> service.create(data, ServiceUtils.getUserFrom(request)))
@@ -66,7 +67,7 @@ public class ContentCrudController extends Controller {
 	 * @param id      the ID of content that's going to be updated
 	 * @return the content that's been updated
 	 */
-	@Validation
+	@Validation(type = Content.class)
 	public CompletableFuture<Result> update(Http.Request request, String id) {
 		return serializationService.parseBodyOfType(request, Content.class)
 			.thenCompose((data) -> service.update(data, id, ServiceUtils.getUserFrom(request)))

@@ -1,12 +1,10 @@
 package io.exercise.api.controllers;
 
 import io.exercise.api.actions.Validation;
-import io.exercise.api.models.Dashboard;
 import io.exercise.api.models.User;
 import io.exercise.api.services.SerializationService;
 import io.exercise.api.services.UserCrudService;
 import io.exercise.api.utils.DatabaseUtils;
-import io.exercise.api.utils.ServiceUtils;
 import play.mvc.Controller;
 import play.mvc.Http;
 import play.mvc.Result;
@@ -23,7 +21,7 @@ public class UserCrudController extends Controller {
 	@Inject
 	UserCrudService service;
 
-	@Validation
+	@Validation(type = User.class)
 	public CompletableFuture<Result> create(Http.Request request) {
 		return serializationService.parseBodyOfType(request, User.class)
 			.thenCompose((data) -> service.create(data))
@@ -39,7 +37,7 @@ public class UserCrudController extends Controller {
 			.exceptionally(DatabaseUtils::throwableToResult);
 	}
 
-	@Validation
+	@Validation(type = User.class)
 	public CompletableFuture<Result> update(Http.Request request, String id) {
 		return serializationService.parseBodyOfType(request, User.class)
 			.thenCompose((data) -> service.update(data, id))

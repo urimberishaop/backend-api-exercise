@@ -12,7 +12,6 @@ import io.exercise.api.exceptions.RequestException;
 import io.exercise.api.models.ChatRoom;
 import io.exercise.api.models.User;
 import io.exercise.api.mongo.IMongoDB;
-import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 import play.libs.Json;
@@ -157,26 +156,4 @@ public class ServiceUtils {
 			in("writeACL", requestingUser.getRoles()),
 			eq("writeACL", new ArrayList<>()));
 	}
-
-	/**
-	 * Mongo GraphLookup in a prettier way (hiding the documents)
-	 *
-	 * @param from             the target collection
-	 * @param startWith        expression to start
-	 * @param connectFromField field to connect
-	 * @param connectToField   field to connect to
-	 * @param as               name of the array field
-	 * @param depthField       optional Name of the depth field
-	 * @return
-	 */
-	public static Document graphLookupEdited(String from, String startWith, String connectFromField, String connectToField, String as, String depthField) {
-		return new Document("$graphLookup",
-			new Document("from", from)
-				.append("startWith", startWith)
-				.append("connectFromField", connectFromField)
-				.append("connectToField", connectToField)
-				.append("as", as)
-				.append("depthField", depthField));
-	}
-
 }

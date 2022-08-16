@@ -3,6 +3,7 @@ package io.exercise.api.services;
 import com.google.inject.Inject;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.GraphLookupOptions;
 import io.exercise.api.exceptions.RequestException;
 import io.exercise.api.models.BaseModel;
 import io.exercise.api.models.Content;
@@ -149,8 +150,7 @@ public class DashboardCrudService {
 				List<Bson> pipeline = Arrays.asList(
 					Aggregates.match(ServiceUtils.readAccessFilter(requestingUser)),
 					Aggregates.match(new Document("parentId", new BsonNull())),
-					ServiceUtils.graphLookupEdited(DASHBOARDS_COLLECTION_NAME, "$_id", "_id",
-						"parentId", "children", "level"),
+					Aggregates.graphLookup(DASHBOARDS_COLLECTION_NAME, "$_id", "_id", "parentId", "children", new GraphLookupOptions().depthField("level")),
 					Aggregates.skip(skip),
 					Aggregates.limit(limit));
 

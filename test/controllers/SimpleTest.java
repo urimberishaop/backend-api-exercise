@@ -43,8 +43,8 @@ public class SimpleTest extends WithApplication {
 	public void init() {
 		//Getting the token
 		this.user = new User();
-		user.setUsername("test");
-		user.setPassword("test");
+		user.setUsername("testingUser");
+		user.setPassword("testingPass");
 		user.setRoles(List.of("62e7dc19bcae4f4a49908dca"));
 
 		//Adding the user to mongo via our route
@@ -114,8 +114,8 @@ public class SimpleTest extends WithApplication {
 	@Test
 	public void testAuthenticate() {
 		User user = new User();
-		user.setUsername("test");
-		user.setPassword("test");
+		user.setUsername("testingUser");
+		user.setPassword("testingPass");
 
 		Http.RequestBuilder request = new Http.RequestBuilder()
 			.method(POST)
@@ -169,6 +169,24 @@ public class SimpleTest extends WithApplication {
 		assertFalse(result.contentType().isEmpty());
 		assertEquals("application/json", result.contentType().get());
 		assertEquals(OK, result.status());
+	}
+
+	/**
+	 * Tests adding a dashboard with an empty name.
+	 */
+	@Test
+	public void testCreateEmpty() {
+		Dashboard d1 = new Dashboard();
+		d1.setReadACL(List.of(this.user.getId().toString(), "62e7dc19bcae4f4a49908dca"));
+		d1.setWriteACL(List.of(this.user.getId().toString()));
+
+		Result result = route(app, new Http.RequestBuilder()
+			.method(POST)
+			.uri("/api/dashboard")
+			.bodyJson(Json.toJson(d1))
+			.header("token", token));
+
+		assertEquals(BAD_REQUEST, result.status());
 	}
 
 	/**

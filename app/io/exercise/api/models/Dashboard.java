@@ -6,7 +6,8 @@ import org.bson.codecs.pojo.annotations.BsonIgnore;
 import org.bson.codecs.pojo.annotations.BsonProperty;
 import org.bson.types.ObjectId;
 
-import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -17,7 +18,8 @@ import java.util.List;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Builder
 public class Dashboard extends BaseModel {
-    @NotEmpty(message = "cannot be empty!")
+    @NotNull(message = "cannot be empty!")
+    @Size(min = 3, max = 25)
     private String name;
     private String description;
     private ObjectId parentId;

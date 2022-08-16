@@ -3,6 +3,7 @@ package io.exercise.api.controllers;
 import io.exercise.api.actions.Authentication;
 import io.exercise.api.actions.Validation;
 import io.exercise.api.models.Dashboard;
+import io.exercise.api.models.User;
 import io.exercise.api.services.DashboardCrudService;
 import io.exercise.api.services.SerializationService;
 import io.exercise.api.utils.DatabaseUtils;
@@ -34,7 +35,7 @@ public class DashboardCrudController extends Controller {
 	 * @param request the request containing the dashboard
 	 * @return the dashboard that's added (as Json)
 	 */
-	@Validation
+	@Validation(type = Dashboard.class)
 	public CompletableFuture<Result> create(Http.Request request) {
 		return serializationService.parseBodyOfType(request, Dashboard.class)
 			.thenCompose((data) -> service.create(data))
@@ -65,7 +66,7 @@ public class DashboardCrudController extends Controller {
 	 * @param id      the ID of dashboard that's going to be updated
 	 * @return the dashboard that's been updated
 	 */
-	@Validation
+	@Validation(type = Dashboard.class)
 	public CompletableFuture<Result> update(Http.Request request, String id) {
 		return serializationService.parseBodyOfType(request, Dashboard.class)
 			.thenCompose((data) -> service.update(data, id, ServiceUtils.getUserFrom(request)))

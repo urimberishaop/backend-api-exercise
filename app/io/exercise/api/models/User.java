@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 import org.bson.codecs.pojo.annotations.BsonIgnore;
 import org.bson.types.ObjectId;
 
+import javax.validation.constraints.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,7 +19,11 @@ import java.util.List;
 @NoArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class User extends BaseModel {
+	@NotNull(message = "cannot be empty!")
+	@Size(min = 5, max = 20)
 	private String username;
+	@NotNull(message = "cannot be empty!")
+	@Size(min = 8, max = 50)
 	private String password;
 	private List<String> roles = new ArrayList<>();
 	@JsonIgnore

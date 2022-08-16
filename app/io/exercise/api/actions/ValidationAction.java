@@ -27,7 +27,7 @@ public class ValidationAction extends Action<Validation> {
                 return CompletableFuture.completedFuture(badRequest(Json.toJson(errors)));
             }
         } catch (Exception e) {
-            return CompletableFuture.completedFuture(badRequest("Something went wrong. " + e));
+            return CompletableFuture.completedFuture(badRequest(e.toString()));
         }
         return delegate.call(request);
     }
