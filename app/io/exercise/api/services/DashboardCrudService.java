@@ -125,6 +125,14 @@ public class DashboardCrudService {
 	public CompletableFuture<Dashboard> delete(String id, User requestingUser) {
 		return CompletableFuture.supplyAsync(() -> {
 			try {
+				mongoDB.getMongoDatabase()
+					.getCollection(CONTENT_COLLECTION_NAME, Content.class)
+					.deleteMany(Filters.eq("dashboardId", new ObjectId(id)));
+
+				mongoDB.getMongoDatabase()
+					.getCollection(DASHBOARDS_COLLECTION_NAME, Dashboard.class)
+					.deleteMany(Filters.eq("parentId", new ObjectId(id)));
+
 				return mongoDB.getMongoDatabase()
 					.getCollection(DASHBOARDS_COLLECTION_NAME, Dashboard.class)
 					.findOneAndDelete(Filters.and(
